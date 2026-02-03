@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riftbound Top Cut Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  /* ─── reset & variables ─── */
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --bg-deep:    #060a14;
+    --bg-card:    #0e1420;
+    --bg-input:   #121c2a;
+    --border:     rgba(100,180,255,.18);
+    --border-hi:  rgba(100,180,255,.45);
+    --gold:       #d4af37;
+    --gold-dim:   rgba(212,175,55,.25);
+    --cyan:       #4fc3f7;
+    --cyan-dim:   rgba(79,195,247,.18);
+    --green:      #4caf50;
+    --green-dim:  rgba(76,175,80,.18);
+    --amber:      #ffb74d;
+    --amber-dim:  rgba(255,183,77,.18);
+    --red:        #ef5350;
+    --red-dim:    rgba(239,83,80,.18);
+    --text:       #c8d6e5;
+    --text-dim:   #5a6e82;
+    --text-hi:    #eef2f7;
+  }
+
+  html { font-size:16px; }
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+    /* subtle scanline overlay */
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,.07) 3px,
+        rgba(0,0,0,.07) 4px
+      );
+  }
+
+  /* ─── layout ─── */
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  /* ─── header ─── */
+  .header { text-align:center; margin-bottom:2.5rem; }
+  .header h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--cyan) 60%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p {
+    font-size: .88rem;
+    color: var(--text-dim);
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    margin-top: .3rem;
+  }
+
+  /* ─── cards ─── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.6rem 1.8rem;
+    margin-bottom: 1.4rem;
+    position: relative;
+  }
+  .card::before {
+    /* thin gold top-accent */
+    content:'';
+    position:absolute;
+    top:0; left:12%; right:12%; height:2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    border-radius: 0 0 2px 2px;
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+  }
+
+  /* ─── form row ─── */
+  .row { display:flex; gap:1rem; flex-wrap:wrap; }
+  .row .field { flex:1; min-width:140px; }
+  .field label {
+    display:block;
+    font-size:.78rem;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color: var(--text-dim);
+    margin-bottom:.35rem;
+  }
+  .field input {
+    width:100%;
+    padding: .55rem .7rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-hi);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .95rem;
+    outline:none;
+    transition: border-color .2s;
+  }
+  .field input:focus { border-color: var(--border-hi); }
+  .field input[type=number]::-webkit-inner-spin-button { opacity:.4; }
+
+  /* ─── hint box ─── */
+  .hint {
+    background: var(--cyan-dim);
+    border: 1px solid rgba(79,195,247,.3);
+    border-radius: 7px;
+    padding: .75rem 1rem;
+    font-size: .85rem;
+    color: var(--cyan);
+    margin-bottom: 1rem;
+    line-height: 1.55;
+  }
+  .hint strong { color: var(--text-hi); }
+
+  /* ─── buttons ─── */
+  .btn-row { display:flex; gap:.8rem; justify-content:center; flex-wrap:wrap; margin-top:.6rem; }
+  .btn {
+    position:relative; overflow:hidden;
+    padding: .7rem 2rem;
+    border:none; border-radius:7px;
+    font-family:'Rajdhani',sans-serif;
+    font-size:1rem; font-weight:700;
+    letter-spacing:.12em; text-transform:uppercase;
+    cursor:pointer;
+    transition: transform .15s, box-shadow .2s;
+  }
+  .btn::after {
+    content:''; position:absolute;
+    inset:0;
+    background: linear-gradient(135deg, rgba(255,255,255,.15), transparent 60%);
+    pointer-events:none;
+  }
+  .btn:hover { transform:translateY(-2px); }
+  .btn:active { transform:translateY(0); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold), #b8941f);
+    color: #0e1420;
+    box-shadow: 0 3px 14px var(--gold-dim);
+  }
+  .btn-primary:hover { box-shadow: 0 5px 22px rgba(212,175,55,.4); }
+
+  .btn-secondary {
+    background: linear-gradient(135deg, rgba(79,195,247,.25), rgba(79,195,247,.1));
+    color: var(--cyan);
+    border: 1px solid rgba(79,195,247,.35);
+  }
+  .btn-secondary:hover { border-color: var(--border-hi); }
+
+  .btn:disabled { opacity:.4; cursor:not-allowed; transform:none !important; }
+
+  /* ─── status / error banners ─── */
+  .banner {
+    border-radius: 7px;
+    padding: .7rem 1rem;
+    font-size: .88rem;
+    margin-top:1rem;
+    display:none;
+  }
+  .banner.show { display:block; }
+  .banner.info   { background:var(--cyan-dim);  color:var(--cyan);  border:1px solid rgba(79,195,247,.3); }
+  .banner.error  { background:var(--red-dim);   color:var(--red);   border:1px solid rgba(239,83,80,.3);  }
+  .banner.ok     { background:var(--green-dim); color:var(--green); border:1px solid rgba(76,175,80,.3);  }
+
+  /* ─── spinner ─── */
+  .spinner {
+    display:none; text-align:center; padding:2.5rem 0;
+  }
+  .spinner.show { display:block; }
+  .spinner .ring {
+    display:inline-block; width:38px; height:38px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .spinner p { color:var(--text-dim); margin-top:.7rem; font-size:.9rem; letter-spacing:.08em; }
+
+  /* ─── results section ─── */
+  #results { display:none; }
+  #results.show { display:block; }
+
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px,1fr));
+    gap: .8rem;
+    margin-bottom: 1.6rem;
+  }
+  .stat {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .7rem .5rem;
+    text-align:center;
+  }
+  .stat .val {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family:'Share Tech Mono',monospace;
+  }
+  .stat .lbl {
+    font-size: .72rem;
+    letter-spacing: .12em;
+    text-transform:uppercase;
+    color: var(--text-dim);
+    margin-top: .15rem;
+  }
+
+  /* ─── table ─── */
+  .tbl-wrap { overflow-x: auto; }
+  table {
+    width:100%; border-collapse:collapse;
+    font-size: .92rem;
+  }
+  thead th {
+    text-align:left;
+    padding: .75rem .7rem;
+    font-size:.72rem;
+    letter-spacing:.13em;
+    text-transform:uppercase;
+    color: var(--gold);
+    border-bottom: 1px solid var(--gold-dim);
+    background: rgba(212,175,55,.06);
+    white-space:nowrap;
+  }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  tbody tr:hover { background: rgba(79,195,247,.04); }
+  tbody td { padding: .7rem .7rem; vertical-align:middle; }
+
+  /* rank badge */
+  .rank { font-family:'Share Tech Mono',monospace; font-weight:700; font-size:1rem; }
+  .rank.in-cut { color: var(--cyan); text-shadow: 0 0 8px rgba(79,195,247,.4); }
+
+  /* divider row between cut / bubble / out */
+  tr.divider td {
+    padding: .35rem 0;
+    font-size:.72rem;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px dashed var(--border);
+  }
+
+  /* status pill */
+  .pill {
+    display:inline-block;
+    padding: .25rem .7rem;
+    border-radius: 20px;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing:.04em;
+    white-space:nowrap;
+  }
+  .pill.guaranteed { background:var(--green-dim); color:var(--green); border:1px solid rgba(76,175,80,.3); }
+  .pill.contention { background:var(--amber-dim); color:var(--amber); border:1px solid rgba(255,183,77,.3); }
+  .pill.eliminated { background:var(--red-dim);   color:var(--red);   border:1px solid rgba(239,83,80,.3);  }
+
+  /* scenario note */
+  .scenario {
+    margin-top: .35rem;
+    font-size: .82rem;
+    color: var(--text-dim);
+    line-height:1.45;
+  }
+  .scenario .need { color: var(--amber); font-weight:600; }
+
+  /* ─── responsive ─── */
+  @media (max-width:600px) {
+    .header h1 { font-size:1.7rem; }
+    .card { padding:1.2rem 1rem; }
+    thead th, tbody td { padding:.55rem .4rem; font-size:.82rem; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- header -->
+  <header class="header">
+    <h1>Top Cut Calculator</h1>
+    <p>Riftbound Swiss Tournament Analysis</p>
+  </header>
+
+  <!-- config card -->
+  <div class="card">
+    <div class="card-title">Tournament Settings</div>
+    <div class="row">
+      <div class="field">
+        <label for="eventId">Event ID</label>
+        <input type="text" id="eventId" placeholder="e.g. 195195">
+      </div>
+      <div class="field">
+        <label for="totalRounds">Total Rounds</label>
+        <input type="number" id="totalRounds" value="5" min="1" max="15">
+      </div>
+      <div class="field">
+        <label for="topCut">Top Cut Size</label>
+        <input type="number" id="topCut" value="8" min="1" max="64">
+      </div>
+    </div>
+  </div>
+
+  <!-- action -->
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btnFetch">Fetch Standings</button>
+  </div>
+
+  <!-- status banners -->
+  <div class="banner info"  id="bannerInfo"></div>
+  <div class="banner error" id="bannerErr"></div>
+  <div class="banner ok"    id="bannerOk"></div>
+
+  <!-- spinner -->
+  <div class="spinner" id="spinner">
+    <div class="ring"></div>
+    <p>Fetching standings…</p>
+  </div>
+
+  <!-- results -->
+  <div id="results">
+    <div class="card" style="margin-top:1.6rem;">
+      <div class="card-title">Current Standings & Top-Cut Scenarios</div>
+
+      <div class="stats-bar" id="statsBar"></div>
+
+      <div class="tbl-wrap">
+        <table id="standingsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th>W-L-D</th>
+              <th>Pts</th>
+              <th>OMW%</th>
+              <th>GW%</th>
+              <th>OGW%</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="standingsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ──────────────────────────────────────────────
+// CONFIG
+// ──────────────────────────────────────────────
+// Change PROXY_BASE to your own Vercel URL after deploying.
+// While testing locally just point to localhost:
+const PROXY_BASE = '/api/standings';   // relative — works on Vercel out of the box
+
+// ──────────────────────────────────────────────
+// DOM refs
+// ──────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const btnFetch     = $('btnFetch');
+const bannerInfo   = $('bannerInfo');
+const bannerErr    = $('bannerErr');
+const bannerOk     = $('bannerOk');
+const spinner      = $('spinner');
+const results      = $('results');
+const statsBar     = $('statsBar');
+const standingsBody= $('standingsBody');
+
+// ──────────────────────────────────────────────
+// helpers
+// ──────────────────────────────────────────────
+function showBanner(type, msg) {
+  [bannerInfo, bannerErr, bannerOk].forEach(b => b.classList.remove('show'));
+  const el = type === 'info' ? bannerInfo : type === 'error' ? bannerErr : bannerOk;
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function hideBanners() {
+  [bannerInfo, bannerErr, bannerOk].forEach(b => b.classList.remove('show'));
+}
+
+function pts(p) { return p.wins * 3 + p.draws; }
+
+// Sort: points desc → OMW% desc → GW% desc → OGW% desc
+function cmp(a, b) {
+  if (pts(b) !== pts(a)) return pts(b) - pts(a);
+  if (b.omw !== a.omw)   return b.omw - a.omw;
+  if (b.gw  !== a.gw)    return b.gw  - a.gw;
+  return b.ogw - a.ogw;
+}
+
+// ──────────────────────────────────────────────
+// parse raw API → player array
+// We log the first result so you can tweak field
+// names if the API shape changes.
+// ──────────────────────────────────────────────
+function parsePlayers(json) {
+  // The API returns paginated *match* objects.
+  // Each match has two players with their cumulative stats.
+  // We dedupe by player name and just keep the latest snapshot.
+  const map = new Map();
+
+  const results = json.results || json;   // handle both paginated & flat
+
+  for (const match of results) {
+    // log first match for debugging field names
+    if (map.size === 0) console.log('First match object:', JSON.stringify(match, null, 2));
+
+    // Try every known / guessed shape; add more as needed
+    const slots = [
+      match.player1, match.player2,
+      match.player_1, match.player_2,
+      match.p1, match.p2,
+    ];
+
+    for (const slot of slots) {
+      if (!slot) continue;
+      const name =
+        slot.name ||
+        slot.player_name ||
+        slot.display_name ||
+        slot.username ||
+        (slot.player && (slot.player.name || slot.player.display_name));
+
+      if (!name) continue;
+
+      // overwrite each time — last match is the freshest snapshot
+      map.set(name, {
+        name,
+        wins:   slot.wins   ?? slot.match_wins   ?? 0,
+        losses: slot.losses ?? slot.match_losses ?? 0,
+        draws:  slot.draws  ?? slot.match_draws  ?? 0,
+        gw:     slot.game_win_percentage          ?? slot.gw_pct  ?? slot.gw  ?? 0,
+        omw:    slot.opponent_match_win_percentage?? slot.omw_pct ?? slot.omw ?? 0,
+        ogw:    slot.opponent_game_win_percentage  ?? slot.ogw_pct?? slot.ogw ?? 0,
+      });
+    }
+  }
+
+  return [...map.values()].sort(cmp);
+}
+
+// ──────────────────────────────────────────────
+// scenario engine
+// ──────────────────────────────────────────────
+/*
+  For each player we answer:
+    1. guaranteed – even if they lose every remaining match, they're still top N
+    2. eliminated – even if they win every remaining match, they can't be top N
+       (we use a *best-case* check: assume all OTHER players LOSE out, so only
+        players whose CURRENT points already exceed our best-case are counted)
+    3. contention – neither of the above.  We then find the MINIMUM additional
+       wins the player needs such that, in the BEST case for them (everyone else
+       loses out), they land inside the cut.
+*/
+function analyse(players, totalRounds, cutSize) {
+  const currentRound = players.length
+    ? players[0].wins + players[0].losses + players[0].draws
+    : 0;
+  const remaining = Math.max(0, totalRounds - currentRound);
+
+  return players.map((p, idx) => {
+    const curPts   = pts(p);
+    const maxPts   = curPts + remaining * 3;   // win every remaining
+    const minPts   = curPts;                   // lose every remaining
+
+    // --- guaranteed? ---
+    // Count players whose MINIMUM possible points (= current pts, i.e. they lose out)
+    // are still strictly above our MINIMUM (we also lose out).
+    // If fewer than cutSize players are guaranteed above us even in worst case → guaranteed.
+    // But actually for "guaranteed" the proper check: even if WE lose out AND everyone
+    // else wins out, are we still in?  That's the hard version.  Simpler conservative:
+    // if remaining === 0 and rank <= cutSize → guaranteed.
+    let guaranteed = false;
+    if (remaining === 0 && idx < cutSize) guaranteed = true;
+
+    // --- eliminated? ---
+    // If we win out (maxPts), how many players have current pts ALREADY > maxPts?
+    // Those players are guaranteed above us no matter what.
+    // If that count >= cutSize → eliminated.
+    let aboveEvenIfWeWinOut = 0;
+    for (const o of players) {
+      if (o === p) continue;
+      if (pts(o) > maxPts) aboveEvenIfWeWinOut++;
+    }
+    let eliminated = aboveEvenIfWeWinOut >= cutSize;
+
+    // --- minimum wins needed ---
+    // Binary-search / linear scan: for w = 0..remaining, what's the smallest w
+    // such that, if we get w wins (and lose the rest), and every OTHER player
+    // loses out (stays at current pts), we are ranked < cutSize?
+    let winsNeeded = null;
+    if (!eliminated && !guaranteed && remaining > 0) {
+      for (let w = 0; w <= remaining; w++) {
+        const myPts = curPts + w * 3;
+        // count how many others have current pts >= myPts
+        // (ties broken by tiebreakers — approximate: count strictly greater,
+        //  then those equal; if equal count pushes us out, need one more win)
+        let above = 0;
+        for (const o of players) {
+          if (o === p) continue;
+          if (pts(o) > myPts) { above++; continue; }
+          if (pts(o) === myPts) {
+            // tiebreak: OMW > GW > OGW (current values — rough but good enough)
+            if (o.omw > p.omw || (o.omw === p.omw && o.gw > p.gw) || (o.omw === p.omw && o.gw === p.gw && o.ogw > p.ogw))
+              above++;
+          }
+        }
+        if (above < cutSize) { winsNeeded = w; break; }
+      }
+    }
+
+    return { player: p, idx, guaranteed, eliminated, remaining, winsNeeded, maxPts };
+  });
+}
+
+// ──────────────────────────────────────────────
+// render
+// ──────────────────────────────────────────────
+function render(analyses, totalRounds, cutSize) {
+  const remaining = analyses.length ? analyses[0].remaining : 0;
+  const currentRound = totalRounds - remaining;
+
+  // stats bar
+  statsBar.innerHTML = `
+    <div class="stat"><div class="val" style="color:var(--cyan)">${analyses.length}</div><div class="lbl">Players</div></div>
+    <div class="stat"><div class="val" style="color:var(--gold)">${currentRound} / ${totalRounds}</div><div class="lbl">Round</div></div>
+    <div class="stat"><div class="val" style="color:var(--amber)">${remaining}</div><div class="lbl">Remaining</div></div>
+    <div class="stat"><div class="val" style="color:var(--green)">${cutSize}</div><div class="lbl">Top Cut</div></div>
+  `;
+
+  let rows = '';
+  let lastZone = '';   // 'in' | 'bubble' | 'out'
+
+  for (const a of analyses) {
+    const p = a.player;
+    const rank = a.idx + 1;
+    const inCut = rank <= cutSize;
+
+    // zone dividers
+    let zone = a.guaranteed ? 'in' : a.eliminated ? 'out' : 'bubble';
+    if (zone !== lastZone && lastZone !== '') {
+      const labels = { in:'─── Currently in top cut ───', bubble:'─── On the bubble ───', out:'─── Needs help / eliminated ───' };
+      rows += `<tr class="divider"><td colspan="8">${labels[zone]}</td></tr>`;
+    }
+    lastZone = zone;
+
+    // pill
+    let pill, scenario = '';
+    if (a.guaranteed) {
+      pill = '<span class="pill guaranteed">✓ Locked In</span>';
+    } else if (a.eliminated) {
+      pill = '<span class="pill eliminated">✕ Eliminated</span>';
+    } else {
+      pill = '<span class="pill contention">⚡ Contention</span>';
+      if (a.winsNeeded !== null) {
+        if (a.winsNeeded === 0) {
+          scenario = `<div class="scenario">Currently in — may hold with <span class="need">0 more wins</span> if others lose</div>`;
+        } else {
+          scenario = `<div class="scenario">Need <span class="need">${a.winsNeeded} win${a.winsNeeded>1?'s':''}</span> of ${a.remaining} remaining (assumes others lose out)</div>`;
+        }
+      }
+    }
+
+    rows += `
+      <tr>
+        <td><span class="rank ${inCut ? 'in-cut' : ''}">${rank}</span></td>
+        <td style="color:var(--text-hi);font-weight:600">${p.name}</td>
+        <td style="font-family:'Share Tech Mono',monospace">${p.wins}-${p.losses}-${p.draws}</td>
+        <td style="font-family:'Share Tech Mono',monospace;color:var(--gold);font-weight:700">${pts(p)}</td>
+        <td style="color:var(--text-dim)">${p.omw.toFixed(1)}%</td>
+        <td style="color:var(--text-dim)">${p.gw.toFixed(1)}%</td>
+        <td style="color:var(--text-dim)">${p.ogw.toFixed(1)}%</td>
+        <td>${pill}${scenario}</td>
+      </tr>`;
+  }
+
+  standingsBody.innerHTML = rows;
+  results.classList.add('show');
+}
+
+// ──────────────────────────────────────────────
+// fetch
+// ──────────────────────────────────────────────
+btnFetch.addEventListener('click', async () => {
+  const eventId    = $('eventId').value.trim();
+  const totalRounds= parseInt($('totalRounds').value) || 5;
+  const cutSize    = parseInt($('topCut').value)       || 8;
+
+  if (!eventId) { showBanner('error', 'Enter an Event ID first.'); return; }
+
+  hideBanners();
+  results.classList.remove('show');
+  spinner.classList.add('show');
+  btnFetch.disabled = true;
+
+  try {
+    const url = `${PROXY_BASE}?eventId=${eventId}&pageSize=200`;
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`${res.status} – ${err}`);
+    }
+
+    const json    = await res.json();
+    const players = parsePlayers(json);
+
+    if (!players.length) throw new Error('API returned no player data. Event may not have started.');
+
+    const analyses = analyse(players, totalRounds, cutSize);
+    render(analyses, totalRounds, cutSize);
+
+    showBanner('ok', `Loaded ${players.length} players from event ${eventId}.`);
+
+  } catch (err) {
+    console.error(err);
+    showBanner('error', `Failed: ${err.message}`);
+  } finally {
+    spinner.classList.remove('show');
+    btnFetch.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
